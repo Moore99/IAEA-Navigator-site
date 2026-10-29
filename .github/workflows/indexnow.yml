@@ -21,10 +21,8 @@ jobs:
       - name: Ping IndexNow
         continue-on-error: true
         run: |
-          # No sitemap.xml yet, so send every page: each index.html maps to its directory URL.
-          urls=$(find . -name index.html -not -path './node_modules/*' -not -path './.git/*' \
-            | sed -E 's#^\./##; s#index\.html$##' | sort | head -n 10000 \
-            | sed "s#^#${SITE_BASE}#" | jq -R . | jq -sc .)
+          # Send every page listed in sitemap.xml (keep it current when adding pages).
+          urls=$(sed -n 's:.*<loc>\(.*\)</loc>.*:\1:p' sitemap.xml | head -n 10000 | jq -R . | jq -sc .)
           body=$(jq -nc --arg host "$SITE_HOST" --arg key "$INDEXNOW_KEY" \
             --arg loc "${SITE_BASE}${INDEXNOW_KEY}.txt" --argjson urls "$urls" \
             '{host: $host, key: $key, keyLocation: $loc, urlList: $urls}')
