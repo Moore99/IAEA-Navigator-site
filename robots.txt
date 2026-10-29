@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://moore99.github.io/IAEA-Navigator-site/sitemap.xml

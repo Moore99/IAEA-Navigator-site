@@ -8,4 +8,6 @@ repos:
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
+        # nodeenv picks the newest Node, which may be an alpha that crashes it.
+        language_version: 24.11.0
         files: \.(html|css|js|json|md|ya?ml)$
