@@ -1,0 +1,35 @@
+# Tell IndexNow engines (Bing, Yandex, Seznam, Naver...) about the site's pages
+# after GitHub Pages finishes publishing a build of main. Best effort: a failed
+# ping only warns. It never affects the Pages deploy, which this workflow doesn't touch.
+name: IndexNow
+
+on:
+  page_build:
+
+jobs:
+  ping:
+    if: github.event.build.status == 'built'
+    runs-on: ubuntu-latest
+    env:
+      # Public by design; the key file <key>.txt sits at the repo root.
+      INDEXNOW_KEY: f8035c948406b6ca62bbb62bfaa6fb81
+      SITE_HOST: moore99.github.io
+      SITE_BASE: https://moore99.github.io/IAEA-Navigator-site/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ping IndexNow
+        continue-on-error: true
+        run: |
+          # No sitemap.xml yet, so send every page: each index.html maps to its directory URL.
+          urls=$(find . -name index.html -not -path './node_modules/*' -not -path './.git/*' \
+            | sed -E 's#^\./##; s#index\.html$##' | sort | head -n 10000 \
+            | sed "s#^#${SITE_BASE}#" | jq -R . | jq -sc .)
+          body=$(jq -nc --arg host "$SITE_HOST" --arg key "$INDEXNOW_KEY" \
+            --arg loc "${SITE_BASE}${INDEXNOW_KEY}.txt" --argjson urls "$urls" \
+            '{host: $host, key: $key, keyLocation: $loc, urlList: $urls}')
+          echo "$body"
+          curl -fsS -X POST https://api.indexnow.org/indexnow \
+            -H 'Content-Type: application/json; charset=utf-8' -d "$body" \
+            && echo "IndexNow ping sent" \
+            || echo "::warning::IndexNow ping failed"
